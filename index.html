@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>abr·arn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7f9;--ink:#15171c;--mut:#7b8190;--line:#dfe2e8;--acc:#2f5bff;--red:#e5484d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0d10;--ink:#eceef2;--mut:#868c9a;--line:#23262d;--acc:#7c9bff;--red:#ff6b70;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0c0d10;--ink:#eceef2;--mut:#868c9a;--line:#23262d;--acc:#7c9bff;--red:#ff6b70;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;padding-bottom:150px}
+button,input,summary{font:inherit;color:inherit}button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:6px}
+header{display:flex;justify-content:space-between;align-items:center;padding:22px clamp(16px,4vw,40px)}
+.logo{font-weight:600;letter-spacing:-.01em}.logo i{font-style:normal;color:var(--mut)}
+.seg{display:flex;border:1px solid var(--line);border-radius:99px;padding:3px}
+.seg button{padding:6px 16px;border-radius:99px;color:var(--mut)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.stage{overflow-x:auto;padding:10px 16px;min-height:300px;display:flex}
+svg{margin:auto;flex:none}
+.meta{text-align:center;color:var(--mut);font-size:.85rem;font-variant-numeric:tabular-nums}
+.cap{max-width:60ch;margin:10px auto 0;padding:0 20px;text-align:center;font-size:1.3rem;line-height:1.4;min-height:4.2em}
+.tl{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:12px}
+.tl>button{width:32px;height:32px;border:1px solid var(--line);border-radius:50%;color:var(--mut)}
+.tl>button:hover{color:var(--ink);border-color:var(--ink)}
+#dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:min(420px,60vw)}
+#dots button{width:10px;height:10px;border-radius:50%;background:var(--line)}
+#dots button.on{background:var(--acc);transform:scale(1.4)}#dots button.past{background:var(--mut)}
+.dock{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:0 12px calc(16px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.pill{pointer-events:auto;display:flex;align-items:center;gap:4px;background:var(--ink);color:var(--bg);border-radius:99px;padding:6px 8px 6px 18px;box-shadow:0 8px 30px rgb(0 0 0/.18);max-width:100%;position:relative}
+.pill input{width:84px;background:none;border:0;color:inherit;font-size:1rem}.pill input:focus-visible{outline:0}
+.pill input::placeholder{color:var(--mut)}
+.pill .a{padding:8px 12px;border-radius:99px;opacity:.85}.pill .a:hover{opacity:1;background:rgb(127 127 127/.25)}
+.pill .main{background:var(--acc);color:#fff;font-weight:600;opacity:1}
+details.more{position:relative}summary{list-style:none;cursor:pointer;padding:8px 12px;border-radius:99px;opacity:.85}summary::-webkit-details-marker{display:none}
+.menu{position:absolute;bottom:calc(100% + 14px);right:0;background:var(--ink);color:var(--bg);border-radius:16px;padding:6px;min-width:190px;display:grid;box-shadow:0 8px 30px rgb(0 0 0/.18)}
+.menu button{text-align:left;padding:8px 12px;border-radius:10px}.menu button:hover{background:rgb(127 127 127/.25)}.menu hr{border:0;border-top:1px solid rgb(127 127 127/.35);margin:4px 0;width:100%}
+.rules{max-width:60ch;margin:34px auto 0;padding:0 20px;color:var(--mut);font-size:.92rem}.rules summary{padding:0;opacity:1;color:var(--ink)}.rules p{margin:8px 0}
+@media (prefers-reduced-motion:no-preference){circle,line{transition:all .25s}}
+@media (max-width:520px){.pill .a.hd{display:none}}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">abr<i>·</i>arn</div>
+<div class="seg" role="group" aria-label="Type d’arbre"><button id="t-abr" aria-pressed="true">ABR</button><button id="t-arn" aria-pressed="false">Rouge-noir</button></div>
+</header>
+<div class="stage"><svg id="svg" role="img" aria-label="Arbre"></svg></div>
+<div class="meta" id="meta"></div>
+<div class="cap" id="msg" aria-live="polite">Insérez une valeur pour commencer.</div>
+<div class="tl"><button id="prev" aria-label="Étape précédente">‹</button><div id="dots"></div><button id="play" aria-label="Lecture">▶</button><button id="next" aria-label="Étape suivante">›</button></div>
+<details class="rules"><summary>Rappel des règles</summary><div id="rules"></div></details>
+<div class="dock"><div class="pill">
+<input id="val" type="number" step="1" placeholder="Valeur" aria-label="Valeur">
+<button class="a main" data-op="ins">Insérer</button>
+<button class="a" data-op="del">Supprimer</button>
+<button class="a hd" data-op="find">Chercher</button>
+<details class="more" id="more"><summary>Plus</summary><div class="menu">
+<button data-op="min">Minimum</button><button data-op="max">Maximum</button><hr>
+<button data-op="in">Parcours infixe</button><button data-op="pre">Parcours préfixe</button><button data-op="post">Parcours postfixe</button><hr>
+<button id="rand">Arbre aléatoire</button><button id="seq">Insérer 10 à 70 dans l’ordre</button><button id="clr">Vider</button>
+</div></details>
+</div></div>
+<script>
+const $=s=>document.querySelector(s);
+let mode='abr',R={abr:null,arn:null},root=null,frames=[],fi=0,rec=true,timer=null;
+const RULES={abr:'<p>Pour chaque nœud : valeurs du sous-arbre gauche plus petites, valeurs du sous-arbre droit plus grandes.</p><p>Opérations en O(h). Avec des valeurs triées, h = n : l’arbre devient une liste.</p>',
+arn:'<p>1. Chaque nœud est rouge ou noir. 2. La racine est noire. 3. Un nœud rouge n’a pas d’enfant rouge. 4. Tous les chemins vers les feuilles vides ont le même nombre de nœuds noirs.</p><p>Conséquence : h ≤ 2·log₂(n+1), donc O(log n).</p>'};
+const mk=(k,c)=>({k,c,l:null,r:null,p:null});
+const ser=n=>n?{k:n.k,c:n.c,l:ser(n.l),r:ser(n.r)}:null;
+const msg=(m,hl=[])=>{if(rec)frames.push({t:ser(root),hl,m})};
+const arn=()=>mode==='arn';
+function rot(x,d){const o=d==='l'?'r':'l',y=x[o];x[o]=y[d];if(y[d])y[d].p=x;y.p=x.p;
+ if(!x.p)root=y;else if(x===x.p.l)x.p.l=y;else x.p.r=y;y[d]=x;x.p=y}
+function tr(u,v){if(!u.p)root=v;else if(u===u.p.l)u.p.l=v;else u.p.r=v;if(v)v.p=u.p}
+const mn=n=>{while(n.l)n=n.l;return n};
+function find(k){let x=root;while(x){if(k===x.k){msg(`${k} = ${x.k} : valeur trouvée.`,[x.k]);return x}
+ msg(`Comparer ${k} avec ${x.k} : ${k<x.k?'plus petit, on va à gauche':'plus grand, on va à droite'}.`,[x.k]);x=k<x.k?x.l:x.r}
+ msg(`Emplacement vide atteint : ${k} n’est pas dans l’arbre.`);return null}
+function fixIns(z){
+ while(z.p&&z.p.c==='R'){
+  let p=z.p,g=p.p,left=g.l===p,u=left?g.r:g.l;
+  if(u&&u.c==='R'){p.c=u.c='B';g.c='R';msg(`Parent (${p.k}) et oncle (${u.k}) sont rouges : on les passe en noir et on rougit le grand-parent (${g.k}). On continue à partir de ${g.k}.`,[p.k,u.k,g.k]);z=g;continue}
+  const s=left?'l':'r',o=left?'r':'l';
+  if(z===p[o]){rot(p,s);msg(`Cas « coude » : rotation autour de ${p.k} pour aligner le nœud, son parent et son grand-parent.`,[z.k,p.k]);z=p;p=z.p}
+  p.c='B';g.c='R';rot(g,o);
+  msg(`Cas « ligne » : le parent (${p.k}) devient noir, le grand-parent (${g.k}) devient rouge, puis rotation autour de ${g.k}.`,[p.k,g.k]);break}
+ if(root.c==='R'){root.c='B';msg(`La racine (${root.k}) doit être noire : on la recolorie.`,[root.k])}}
+function ins(k){
+ let x=root,p=null;
+ while(x){if(k===x.k){msg(`${k} existe déjà : les doublons sont refusés.`,[x.k]);return}
+  msg(`Comparer ${k} avec ${x.k} : ${k<x.k?'plus petit, on va à gauche':'plus grand, on va à droite'}.`,[x.k]);p=x;x=k<x.k?x.l:x.r}
+ const z=mk(k,arn()?'R':'N');z.p=p;
+ if(!p)root=z;else if(k<p.k)p.l=z;else p.r=z;
+ msg(p?`Place libre trouvée : ${k} devient ${k<p.k?'enfant gauche':'enfant droit'} de ${p.k}${arn()?' (un nouveau nœud est toujours rouge)':''}.`:`L’arbre est vide : ${k} devient la racine.`,[k]);
+ if(arn())fixIns(z)}
+function fixDel(x,xp){
+ while(x!==root&&(!x||x.c==='B')){
+  const left=x===xp.l,a=left?'r':'l',b=left?'l':'r';let w=xp[a];
+  if(w.c==='R'){w.c='B';xp.c='R';rot(xp,b);w=xp[a];msg(`Frère rouge : on le noircit, on rougit le parent (${xp.k}) et on tourne autour de ${xp.k}.`,[xp.k,w.k])}
+  if((!w.l||w.l.c==='B')&&(!w.r||w.r.c==='B')){w.c='R';msg(`Frère (${w.k}) noir avec deux neveux noirs : on rougit le frère et on remonte le « noir en trop » vers ${xp.k}.`,[w.k,xp.k]);x=xp;xp=x.p}
+  else{
+   if(!w[a]||w[a].c==='B'){if(w[b])w[b].c='B';w.c='R';rot(w,a);w=xp[a];msg(`Neveu proche rouge, neveu éloigné noir : rotation autour du frère pour se ramener au cas suivant.`,[w.k])}
+   w.c=xp.c;xp.c='B';if(w[a])w[a].c='B';rot(xp,b);
+   msg(`Neveu éloigné rouge : le frère prend la couleur du parent, parent et neveu deviennent noirs, rotation autour de ${xp.k}. Équilibre rétabli.`,[w.k,xp.k]);x=root;break}}
+ if(x&&x.c==='R'){x.c='B';msg(`Le nœud ${x.k} est rouge : on le passe en noir, ce qui absorbe le « noir en trop ».`,[x.k])}}
+function del(k){
+ const z=find(k);if(!z)return;
+ let y=z,yc=y.c,x,xp;
+ if(!z.l){x=z.r;xp=z.p;tr(z,z.r);msg(`${k} n’a pas d’enfant gauche : on le remplace par son enfant droit${x?' ('+x.k+')':' (vide)'}.`,x?[x.k]:[])}
+ else if(!z.r){x=z.l;xp=z.p;tr(z,z.l);msg(`${k} n’a pas d’enfant droit : on le remplace par son enfant gauche (${x.k}).`,[x.k])}
+ else{y=mn(z.r);yc=y.c;x=y.r;msg(`${k} a deux enfants : on prend son successeur, le minimum du sous-arbre droit, soit ${y.k}.`,[y.k]);
+  if(y.p===z)xp=y;else{xp=y.p;tr(y,y.r);y.r=z.r;y.r.p=y}
+  tr(z,y);y.l=z.l;y.l.p=y;y.c=z.c;msg(`${y.k} prend la place de ${k}.`,[y.k])}
+ if(arn()&&yc==='B'){msg(`Le nœud retiré était noir : il manque un nœud noir sur ce chemin, on rééquilibre.`,xp?[xp.k]:[]);fixDel(x,xp)}
+ else if(arn())msg(`Le nœud retiré était rouge : aucune règle n’est violée.`)}
+function walk(kind){
+ const out=[];(function g(n){if(!n)return;if(kind==='pre'){out.push(n.k);msg(`Préfixe : on visite ${n.k}. Ordre : ${out.join(', ')}`,[...out])}
+  g(n.l);if(kind==='in'){out.push(n.k);msg(`Infixe : gauche, puis ${n.k}, puis droite. Ordre : ${out.join(', ')}`,[...out])}
+  g(n.r);if(kind==='post'){out.push(n.k);msg(`Postfixe : on visite ${n.k} après ses deux fils. Ordre : ${out.join(', ')}`,[...out])}})(root);
+ if(kind==='in'&&out.length)msg(`L’infixe donne les valeurs triées : c’est la propriété de l’ABR.`,[...out])}
+function lay(t){let i=0,md=0,list=[];
+ (function go(n,d){if(!n)return null;const L=go(n.l,d+1),o={k:n.k,c:n.c,x:i++,y:d};o.L=L;o.R=go(n.r,d+1);list.push(o);md=Math.max(md,d);return o})(t,0);
+ return{list,w:i,h:md}}
+function show(i){fi=i;const f=frames[i];if(!f)return;const{list,w,h}=lay(f.t);
+ const W=Math.max(w*48+40,300),H=(h+1)*66+40,X=o=>20+o.x*48+(W-w*48-40)/2+20,Y=o=>40+o.y*66;let s='';
+ list.forEach(o=>[o.L,o.R].forEach(c=>{if(c)s+=`<line x1="${X(o)}" y1="${Y(o)}" x2="${X(c)}" y2="${Y(c)}" stroke="var(--mut)" stroke-opacity=".55" stroke-width="1.5"/>`}));
+ list.forEach(o=>{const on=f.hl.includes(o.k),B=o.c==='B',Rd=o.c==='R',col=Rd?'var(--red)':'var(--ink)';
+  if(on)s+=`<circle cx="${X(o)}" cy="${Y(o)}" r="26" fill="var(--acc)" fill-opacity=".14" stroke="var(--acc)" stroke-width="1.5"/>`;
+  s+=`<circle cx="${X(o)}" cy="${Y(o)}" r="19" fill="${B?'var(--ink)':'var(--bg)'}" stroke="${col}" stroke-width="1.6"/><text x="${X(o)}" y="${Y(o)+5}" text-anchor="middle" fill="${B?'var(--bg)':col}" font-size="14" font-weight="500" font-family="inherit">${o.k}</text>`});
+ const sv=$('#svg');sv.setAttribute('viewBox',`0 0 ${W} ${H}`);sv.style.width=W+'px';sv.style.height=H+'px';sv.innerHTML=s;
+ $('#msg').textContent=f.m;$('#meta').textContent=`${w} nœud${w>1?'s':''} · ${w?h+1:0} niveau${h>0?'x':''}`;
+ $('#dots').innerHTML=frames.map((_,j)=>`<button class="${j===i?'on':j<i?'past':''}" data-j="${j}" aria-label="Étape ${j+1}"></button>`).join('')}
+$('#dots').onclick=e=>{const j=e.target.dataset.j;if(j!==undefined){stop();show(+j)}};
+function stop(){clearInterval(timer);timer=null;$('#play').textContent='▶'}
+function play(){if(timer)return stop();if(fi>=frames.length-1)show(0);$('#play').textContent='❚❚';
+ timer=setInterval(()=>{if(fi>=frames.length-1)return stop();show(fi+1)},1100)}
+function run(fn,auto=true){stop();frames=[];rec=true;msg('État de départ.');fn();
+ if(frames.length<2)msg('Rien à faire.');else if(frames[frames.length-1].m!=='Opération terminée.')msg('Opération terminée.');
+ show(0);if(auto&&frames.length>2)play()}
+function quiet(fn,label){stop();rec=false;fn();rec=true;frames=[{t:ser(root),hl:[],m:label}];show(0);$('#more').open=false}
+document.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>{
+ const op=b.dataset.op,v=parseInt($('#val').value,10);$('#more').open=false;
+ if(['ins','del','find'].includes(op)&&isNaN(v)){$('#msg').textContent='Entrez une valeur entière avant de lancer cette opération.';$('#val').focus();return}
+ if(!root&&op!=='ins'){$('#msg').textContent='L’arbre est vide : insérez d’abord des valeurs.';return}
+ run(()=>{if(op==='ins')ins(v);else if(op==='del')del(v);else if(op==='find')find(v);
+  else if(op==='min'){let x=root;while(true){msg(`${x.k} : ${x.l?'il a un fils gauche, on descend':'plus de fils gauche, c’est le minimum'}.`,[x.k]);if(!x.l)break;x=x.l}}
+  else if(op==='max'){let x=root;while(true){msg(`${x.k} : ${x.r?'il a un fils droit, on descend':'plus de fils droit, c’est le maximum'}.`,[x.k]);if(!x.r)break;x=x.r}}
+  else walk(op)});$('#val').select()});
+$('#val').addEventListener('keydown',e=>{if(e.key==='Enter')document.querySelector('[data-op=ins]').click()});
+$('#rand').onclick=()=>quiet(()=>{root=null;const s=new Set();while(s.size<9)s.add(1+Math.floor(Math.random()*99));[...s].forEach(ins)},'Arbre aléatoire de 9 valeurs. Essayez une opération.');
+$('#seq').onclick=()=>quiet(()=>{root=null;[10,20,30,40,50,60,70].forEach(ins)},mode==='abr'?'Valeurs triées : l’ABR est devenu une liste.':'Mêmes valeurs triées : l’arbre rouge-noir reste équilibré grâce aux rotations.');
+$('#clr').onclick=()=>quiet(()=>{root=null},'Arbre vide. Insérez une valeur.');
+$('#prev').onclick=()=>{stop();show(Math.max(0,fi-1))};$('#next').onclick=()=>{stop();show(Math.min(frames.length-1,fi+1))};
+$('#play').onclick=play;
+function setMode(m){stop();R[mode]=root;mode=m;root=R[m];
+ $('#t-abr').setAttribute('aria-pressed',m==='abr');$('#t-arn').setAttribute('aria-pressed',m==='arn');$('#rules').innerHTML=RULES[m];
+ frames=[{t:ser(root),hl:[],m:root?'Arbre actuel. Lancez une opération.':'Arbre vide. Insérez une valeur.'}];show(0)}
+$('#t-abr').onclick=()=>setMode('abr');$('#t-arn').onclick=()=>setMode('arn');
+setMode('abr');
+</script>
+</body>
+</html>
