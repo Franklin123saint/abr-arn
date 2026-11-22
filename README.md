@@ -20,12 +20,12 @@ Une application web qui montre, étape par étape, ce qui se passe dans un **arb
 ## 3. Carte des fichiers
 
 ```
-abr-arn-minimal.html   l’application (HTML + CSS + JavaScript, un seul fichier)
+index.html   l’application (HTML + CSS + JavaScript, un seul fichier)
 abr_arn.c              les mêmes algorithmes en C, avec un main de test
 README.md              ce document
 ```
 
-Dans `indexl.html`, le fichier se lit de haut en bas :
+Dans `index.html`, le fichier se lit de haut en bas :
 
 | Zone | Contenu |
 |---|---|
@@ -101,7 +101,7 @@ Noeud *chercher(Noeud *x, int k) {
 
 ### Accrocher (insérer)
 
-On descend en gardant le parent `p`. Quand on tombe sur une place vide, on y accroche le nouveau nœud (`ins` / `inserer`). Un doublon est refusé.
+On descend en gardant le parent `p`. Quand on tombe sur une place vide, on y accroche le nouveau nœud (`ins` / `inserer`). Un doublon est **accepté** : à l’égalité, on part à droite (voir plus bas).
 
 ### Recoller (supprimer)
 
@@ -114,6 +114,15 @@ Supprimer un nœud `z` laisse un trou. Trois situations (`del` / `supprimer`) :
 | Deux fils | On prend le **successeur** : le minimum du sous-arbre droit. Il prend la place de `z`. |
 
 Le « geste de recollage » s’appelle `transplanter(u, v)` (`tr` en JavaScript) : il remplace `u` par `v` chez le parent de `u`.
+
+### Les doublons
+
+Les clés peuvent apparaître plusieurs fois. Chaque doublon est un **nœud à part entière**.
+
+- **À l’insertion**, quand `k == x->k`, on descend à droite : `(k < x->k) ? x->g : x->d`.
+- **L’invariant** devient : sous-arbre gauche ≤ nœud ≤ sous-arbre droit. Dans l’ARN, une rotation peut envoyer un doublon à gauche, et l’ordre reste valide.
+- **La recherche** s’arrête sur le premier nœud égal rencontré en descendant, et **la suppression** retire un seul nœud portant cette valeur.
+- **Le parcours infixe** reste trié, au sens large : 5, 5, 5, 8…
 
 ### Les parcours
 
@@ -204,7 +213,10 @@ Dans l’arbre de l’expérience 1 (rouge-noir), supprimez **10**. C’est un n
 **Expérience 3 : voir une rotation.**
 Dans l’onglet Rouge-noir, partez d’un arbre vide et insérez 10, 20, 30. Au troisième ajout, 30 et son parent 20 sont rouges, et l’oncle est vide (donc noir) : c’est le cas « ligne », avec une rotation gauche. 20 devient la racine.
 
-Le programme C reproduit les expériences 1 et 2 et affiche l’arbre après chaque étape, avec un contrôle automatique des règles (`noirs()`).
+**Expérience 4 : des doublons.**
+Dans l’onglet ABR, insérez 5 cinq fois de suite : une liste de 5 niveaux, car chaque doublon part à droite. Dans l’onglet Rouge-noir, insérez 5 sept fois : l’arbre reste équilibré (4 niveaux). En C : `5N(5N,5R(5N,5N(5R,5R)))`.
+
+Le programme C reproduit les expériences 1, 2 et 4 et affiche l’arbre après chaque étape, avec un contrôle automatique des règles (`noirs()`).
 
 ---
 
@@ -213,10 +225,11 @@ Le programme C reproduit les expériences 1 et 2 et affiche l’arbre après cha
 - **`x` peut être vide dans `fixDel` / `fixSupp`.** Quand on supprime une feuille noire, le « nœud qui prend sa place » est `NULL`, et un pointeur vide n’a pas de parent. C’est pourquoi la fonction reçoit aussi `xp`, le parent de `x`, séparément.
 - **Gauche ou droite ?** Les cas de rééquilibrage existent en version miroir. Le code évite de les écrire deux fois avec une variable `gauche` et des expressions comme `gauche ? xp->d : xp->g`. Si vous tracez le code à la main, faites-le d’abord pour le cas « gauche ».
 - **Les lettres de couleur** diffèrent entre JavaScript (`'R'`, `'B'`, `'N'`) et C (`ROUGE`, `NOIR`). Voir la section 4.
+- **Doublons et surlignage.** Deux nœuds de même clé ne doivent pas s’allumer ensemble. Dans l’application, chaque nœud a un identifiant unique (`id`), et `msg` surligne par identifiant, pas par valeur.
 - **Le mode ABR réutilise le même code.** `ins` et `del` sont communs : seuls les appels à `fixIns` et `fixDel` sont réservés à l’ARN. L’ARN est un ABR qui se surveille.
 
 ## 11. Limites et pistes
 
-- Les clés sont des entiers, sans doublons.
+- Les clés sont des entiers. Les doublons sont acceptés (section 6).
 - L’application n’affiche pas le code à l’écran : le lien avec le code passe par ce document et par le tableau de la section 8.
 - Pistes : ajouter une file de commandes (« insérer 5, 3, 8 d’un coup »), un mode côte à côte ABR et ARN, ou un export du film en image.

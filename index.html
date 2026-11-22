@@ -66,69 +66,69 @@ details.more{position:relative}summary{list-style:none;cursor:pointer;padding:8p
 </div></div>
 <script>
 const $=s=>document.querySelector(s);
-let mode='abr',R={abr:null,arn:null},root=null,frames=[],fi=0,rec=true,timer=null;
-const RULES={abr:'<p>Pour chaque nœud : valeurs du sous-arbre gauche plus petites, valeurs du sous-arbre droit plus grandes.</p><p>Opérations en O(h). Avec des valeurs triées, h = n : l’arbre devient une liste.</p>',
+let uid=0,mode='abr',R={abr:null,arn:null},root=null,frames=[],fi=0,rec=true,timer=null;
+const RULES={abr:'<p>Pour chaque nœud : valeurs du sous-arbre gauche ≤ nœud ≤ valeurs du sous-arbre droit. Les doublons sont acceptés : à l’insertion, un doublon va à droite.</p><p>Opérations en O(h). Avec des valeurs triées, h = n : l’arbre devient une liste.</p>',
 arn:'<p>1. Chaque nœud est rouge ou noir. 2. La racine est noire. 3. Un nœud rouge n’a pas d’enfant rouge. 4. Tous les chemins vers les feuilles vides ont le même nombre de nœuds noirs.</p><p>Conséquence : h ≤ 2·log₂(n+1), donc O(log n).</p>'};
-const mk=(k,c)=>({k,c,l:null,r:null,p:null});
-const ser=n=>n?{k:n.k,c:n.c,l:ser(n.l),r:ser(n.r)}:null;
-const msg=(m,hl=[])=>{if(rec)frames.push({t:ser(root),hl,m})};
+const mk=(k,c)=>({id:++uid,k,c,l:null,r:null,p:null});
+const ser=n=>n?{id:n.id,k:n.k,c:n.c,l:ser(n.l),r:ser(n.r)}:null;
+const msg=(m,hl=[])=>{if(rec)frames.push({t:ser(root),hl:hl.map(n=>n.id),m})};
 const arn=()=>mode==='arn';
 function rot(x,d){const o=d==='l'?'r':'l',y=x[o];x[o]=y[d];if(y[d])y[d].p=x;y.p=x.p;
  if(!x.p)root=y;else if(x===x.p.l)x.p.l=y;else x.p.r=y;y[d]=x;x.p=y}
 function tr(u,v){if(!u.p)root=v;else if(u===u.p.l)u.p.l=v;else u.p.r=v;if(v)v.p=u.p}
 const mn=n=>{while(n.l)n=n.l;return n};
-function find(k){let x=root;while(x){if(k===x.k){msg(`${k} = ${x.k} : valeur trouvée.`,[x.k]);return x}
- msg(`Comparer ${k} avec ${x.k} : ${k<x.k?'plus petit, on va à gauche':'plus grand, on va à droite'}.`,[x.k]);x=k<x.k?x.l:x.r}
+function find(k){let x=root;while(x){if(k===x.k){msg(`${k} = ${x.k} : valeur trouvée.`,[x]);return x}
+ msg(`Comparer ${k} avec ${x.k} : ${k<x.k?'plus petit, on va à gauche':'plus grand, on va à droite'}.`,[x]);x=k<x.k?x.l:x.r}
  msg(`Emplacement vide atteint : ${k} n’est pas dans l’arbre.`);return null}
 function fixIns(z){
  while(z.p&&z.p.c==='R'){
   let p=z.p,g=p.p,left=g.l===p,u=left?g.r:g.l;
-  if(u&&u.c==='R'){p.c=u.c='B';g.c='R';msg(`Parent (${p.k}) et oncle (${u.k}) sont rouges : on les passe en noir et on rougit le grand-parent (${g.k}). On continue à partir de ${g.k}.`,[p.k,u.k,g.k]);z=g;continue}
+  if(u&&u.c==='R'){p.c=u.c='B';g.c='R';msg(`Parent (${p.k}) et oncle (${u.k}) sont rouges : on les passe en noir et on rougit le grand-parent (${g.k}). On continue à partir de ${g.k}.`,[p,u,g]);z=g;continue}
   const s=left?'l':'r',o=left?'r':'l';
-  if(z===p[o]){rot(p,s);msg(`Cas « coude » : rotation autour de ${p.k} pour aligner le nœud, son parent et son grand-parent.`,[z.k,p.k]);z=p;p=z.p}
+  if(z===p[o]){rot(p,s);msg(`Cas « coude » : rotation autour de ${p.k} pour aligner le nœud, son parent et son grand-parent.`,[z,p]);z=p;p=z.p}
   p.c='B';g.c='R';rot(g,o);
-  msg(`Cas « ligne » : le parent (${p.k}) devient noir, le grand-parent (${g.k}) devient rouge, puis rotation autour de ${g.k}.`,[p.k,g.k]);break}
- if(root.c==='R'){root.c='B';msg(`La racine (${root.k}) doit être noire : on la recolorie.`,[root.k])}}
+  msg(`Cas « ligne » : le parent (${p.k}) devient noir, le grand-parent (${g.k}) devient rouge, puis rotation autour de ${g.k}.`,[p,g]);break}
+ if(root.c==='R'){root.c='B';msg(`La racine (${root.k}) doit être noire : on la recolorie.`,[root])}}
 function ins(k){
  let x=root,p=null;
- while(x){if(k===x.k){msg(`${k} existe déjà : les doublons sont refusés.`,[x.k]);return}
-  msg(`Comparer ${k} avec ${x.k} : ${k<x.k?'plus petit, on va à gauche':'plus grand, on va à droite'}.`,[x.k]);p=x;x=k<x.k?x.l:x.r}
+ while(x){
+  msg(`Comparer ${k} avec ${x.k} : ${k<x.k?'plus petit, on va à gauche':k===x.k?'égal : un doublon va à droite':'plus grand, on va à droite'}.`,[x]);p=x;x=k<x.k?x.l:x.r}
  const z=mk(k,arn()?'R':'N');z.p=p;
  if(!p)root=z;else if(k<p.k)p.l=z;else p.r=z;
- msg(p?`Place libre trouvée : ${k} devient ${k<p.k?'enfant gauche':'enfant droit'} de ${p.k}${arn()?' (un nouveau nœud est toujours rouge)':''}.`:`L’arbre est vide : ${k} devient la racine.`,[k]);
+ msg(p?`Place libre trouvée : ${k} devient ${k<p.k?'enfant gauche':'enfant droit'} de ${p.k}${arn()?' (un nouveau nœud est toujours rouge)':''}.`:`L’arbre est vide : ${k} devient la racine.`,[z]);
  if(arn())fixIns(z)}
 function fixDel(x,xp){
  while(x!==root&&(!x||x.c==='B')){
   const left=x===xp.l,a=left?'r':'l',b=left?'l':'r';let w=xp[a];
-  if(w.c==='R'){w.c='B';xp.c='R';rot(xp,b);w=xp[a];msg(`Frère rouge : on le noircit, on rougit le parent (${xp.k}) et on tourne autour de ${xp.k}.`,[xp.k,w.k])}
-  if((!w.l||w.l.c==='B')&&(!w.r||w.r.c==='B')){w.c='R';msg(`Frère (${w.k}) noir avec deux neveux noirs : on rougit le frère et on remonte le « noir en trop » vers ${xp.k}.`,[w.k,xp.k]);x=xp;xp=x.p}
+  if(w.c==='R'){w.c='B';xp.c='R';rot(xp,b);w=xp[a];msg(`Frère rouge : on le noircit, on rougit le parent (${xp.k}) et on tourne autour de ${xp.k}.`,[xp,w])}
+  if((!w.l||w.l.c==='B')&&(!w.r||w.r.c==='B')){w.c='R';msg(`Frère (${w.k}) noir avec deux neveux noirs : on rougit le frère et on remonte le « noir en trop » vers ${xp.k}.`,[w,xp]);x=xp;xp=x.p}
   else{
-   if(!w[a]||w[a].c==='B'){if(w[b])w[b].c='B';w.c='R';rot(w,a);w=xp[a];msg(`Neveu proche rouge, neveu éloigné noir : rotation autour du frère pour se ramener au cas suivant.`,[w.k])}
+   if(!w[a]||w[a].c==='B'){if(w[b])w[b].c='B';w.c='R';rot(w,a);w=xp[a];msg(`Neveu proche rouge, neveu éloigné noir : rotation autour du frère pour se ramener au cas suivant.`,[w])}
    w.c=xp.c;xp.c='B';if(w[a])w[a].c='B';rot(xp,b);
-   msg(`Neveu éloigné rouge : le frère prend la couleur du parent, parent et neveu deviennent noirs, rotation autour de ${xp.k}. Équilibre rétabli.`,[w.k,xp.k]);x=root;break}}
- if(x&&x.c==='R'){x.c='B';msg(`Le nœud ${x.k} est rouge : on le passe en noir, ce qui absorbe le « noir en trop ».`,[x.k])}}
+   msg(`Neveu éloigné rouge : le frère prend la couleur du parent, parent et neveu deviennent noirs, rotation autour de ${xp.k}. Équilibre rétabli.`,[w,xp]);x=root;break}}
+ if(x&&x.c==='R'){x.c='B';msg(`Le nœud ${x.k} est rouge : on le passe en noir, ce qui absorbe le « noir en trop ».`,[x])}}
 function del(k){
  const z=find(k);if(!z)return;
  let y=z,yc=y.c,x,xp;
- if(!z.l){x=z.r;xp=z.p;tr(z,z.r);msg(`${k} n’a pas d’enfant gauche : on le remplace par son enfant droit${x?' ('+x.k+')':' (vide)'}.`,x?[x.k]:[])}
- else if(!z.r){x=z.l;xp=z.p;tr(z,z.l);msg(`${k} n’a pas d’enfant droit : on le remplace par son enfant gauche (${x.k}).`,[x.k])}
- else{y=mn(z.r);yc=y.c;x=y.r;msg(`${k} a deux enfants : on prend son successeur, le minimum du sous-arbre droit, soit ${y.k}.`,[y.k]);
+ if(!z.l){x=z.r;xp=z.p;tr(z,z.r);msg(`${k} n’a pas d’enfant gauche : on le remplace par son enfant droit${x?' ('+x.k+')':' (vide)'}.`,x?[x]:[])}
+ else if(!z.r){x=z.l;xp=z.p;tr(z,z.l);msg(`${k} n’a pas d’enfant droit : on le remplace par son enfant gauche (${x.k}).`,[x])}
+ else{y=mn(z.r);yc=y.c;x=y.r;msg(`${k} a deux enfants : on prend son successeur, le minimum du sous-arbre droit, soit ${y.k}.`,[y]);
   if(y.p===z)xp=y;else{xp=y.p;tr(y,y.r);y.r=z.r;y.r.p=y}
-  tr(z,y);y.l=z.l;y.l.p=y;y.c=z.c;msg(`${y.k} prend la place de ${k}.`,[y.k])}
- if(arn()&&yc==='B'){msg(`Le nœud retiré était noir : il manque un nœud noir sur ce chemin, on rééquilibre.`,xp?[xp.k]:[]);fixDel(x,xp)}
+  tr(z,y);y.l=z.l;y.l.p=y;y.c=z.c;msg(`${y.k} prend la place de ${k}.`,[y])}
+ if(arn()&&yc==='B'){msg(`Le nœud retiré était noir : il manque un nœud noir sur ce chemin, on rééquilibre.`,xp?[xp]:[]);fixDel(x,xp)}
  else if(arn())msg(`Le nœud retiré était rouge : aucune règle n’est violée.`)}
 function walk(kind){
- const out=[];(function g(n){if(!n)return;if(kind==='pre'){out.push(n.k);msg(`Préfixe : on visite ${n.k}. Ordre : ${out.join(', ')}`,[...out])}
-  g(n.l);if(kind==='in'){out.push(n.k);msg(`Infixe : gauche, puis ${n.k}, puis droite. Ordre : ${out.join(', ')}`,[...out])}
-  g(n.r);if(kind==='post'){out.push(n.k);msg(`Postfixe : on visite ${n.k} après ses deux fils. Ordre : ${out.join(', ')}`,[...out])}})(root);
+ const out=[];(function g(n){if(!n)return;if(kind==='pre'){out.push(n);msg(`Préfixe : on visite ${n.k}. Ordre : ${out.map(n=>n.k).join(', ')}`,[...out])}
+  g(n.l);if(kind==='in'){out.push(n);msg(`Infixe : gauche, puis ${n.k}, puis droite. Ordre : ${out.map(n=>n.k).join(', ')}`,[...out])}
+  g(n.r);if(kind==='post'){out.push(n);msg(`Postfixe : on visite ${n.k} après ses deux fils. Ordre : ${out.map(n=>n.k).join(', ')}`,[...out])}})(root);
  if(kind==='in'&&out.length)msg(`L’infixe donne les valeurs triées : c’est la propriété de l’ABR.`,[...out])}
 function lay(t){let i=0,md=0,list=[];
- (function go(n,d){if(!n)return null;const L=go(n.l,d+1),o={k:n.k,c:n.c,x:i++,y:d};o.L=L;o.R=go(n.r,d+1);list.push(o);md=Math.max(md,d);return o})(t,0);
+ (function go(n,d){if(!n)return null;const L=go(n.l,d+1),o={id:n.id,k:n.k,c:n.c,x:i++,y:d};o.L=L;o.R=go(n.r,d+1);list.push(o);md=Math.max(md,d);return o})(t,0);
  return{list,w:i,h:md}}
 function show(i){fi=i;const f=frames[i];if(!f)return;const{list,w,h}=lay(f.t);
  const W=Math.max(w*48+40,300),H=(h+1)*66+40,X=o=>20+o.x*48+(W-w*48-40)/2+20,Y=o=>40+o.y*66;let s='';
  list.forEach(o=>[o.L,o.R].forEach(c=>{if(c)s+=`<line x1="${X(o)}" y1="${Y(o)}" x2="${X(c)}" y2="${Y(c)}" stroke="var(--mut)" stroke-opacity=".55" stroke-width="1.5"/>`}));
- list.forEach(o=>{const on=f.hl.includes(o.k),B=o.c==='B',Rd=o.c==='R',col=Rd?'var(--red)':'var(--ink)';
+ list.forEach(o=>{const on=f.hl.includes(o.id),B=o.c==='B',Rd=o.c==='R',col=Rd?'var(--red)':'var(--ink)';
   if(on)s+=`<circle cx="${X(o)}" cy="${Y(o)}" r="26" fill="var(--acc)" fill-opacity=".14" stroke="var(--acc)" stroke-width="1.5"/>`;
   s+=`<circle cx="${X(o)}" cy="${Y(o)}" r="19" fill="${B?'var(--ink)':'var(--bg)'}" stroke="${col}" stroke-width="1.6"/><text x="${X(o)}" y="${Y(o)+5}" text-anchor="middle" fill="${B?'var(--bg)':col}" font-size="14" font-weight="500" font-family="inherit">${o.k}</text>`});
  const sv=$('#svg');sv.setAttribute('viewBox',`0 0 ${W} ${H}`);sv.style.width=W+'px';sv.style.height=H+'px';sv.innerHTML=s;
@@ -147,11 +147,11 @@ document.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>{
  if(['ins','del','find'].includes(op)&&isNaN(v)){$('#msg').textContent='Entrez une valeur entière avant de lancer cette opération.';$('#val').focus();return}
  if(!root&&op!=='ins'){$('#msg').textContent='L’arbre est vide : insérez d’abord des valeurs.';return}
  run(()=>{if(op==='ins')ins(v);else if(op==='del')del(v);else if(op==='find')find(v);
-  else if(op==='min'){let x=root;while(true){msg(`${x.k} : ${x.l?'il a un fils gauche, on descend':'plus de fils gauche, c’est le minimum'}.`,[x.k]);if(!x.l)break;x=x.l}}
-  else if(op==='max'){let x=root;while(true){msg(`${x.k} : ${x.r?'il a un fils droit, on descend':'plus de fils droit, c’est le maximum'}.`,[x.k]);if(!x.r)break;x=x.r}}
+  else if(op==='min'){let x=root;while(true){msg(`${x.k} : ${x.l?'il a un fils gauche, on descend':'plus de fils gauche, c’est le minimum'}.`,[x]);if(!x.l)break;x=x.l}}
+  else if(op==='max'){let x=root;while(true){msg(`${x.k} : ${x.r?'il a un fils droit, on descend':'plus de fils droit, c’est le maximum'}.`,[x]);if(!x.r)break;x=x.r}}
   else walk(op)});$('#val').select()});
 $('#val').addEventListener('keydown',e=>{if(e.key==='Enter')document.querySelector('[data-op=ins]').click()});
-$('#rand').onclick=()=>quiet(()=>{root=null;const s=new Set();while(s.size<9)s.add(1+Math.floor(Math.random()*99));[...s].forEach(ins)},'Arbre aléatoire de 9 valeurs. Essayez une opération.');
+$('#rand').onclick=()=>quiet(()=>{root=null;for(let i=0;i<9;i++)ins(1+Math.floor(Math.random()*20))},'Arbre aléatoire de 9 valeurs (les doublons sont acceptés). Essayez une opération.');
 $('#seq').onclick=()=>quiet(()=>{root=null;[10,20,30,40,50,60,70].forEach(ins)},mode==='abr'?'Valeurs triées : l’ABR est devenu une liste.':'Mêmes valeurs triées : l’arbre rouge-noir reste équilibré grâce aux rotations.');
 $('#clr').onclick=()=>quiet(()=>{root=null},'Arbre vide. Insérez une valeur.');
 $('#prev').onclick=()=>{stop();show(Math.max(0,fi-1))};$('#next').onclick=()=>{stop();show(Math.min(frames.length-1,fi+1))};

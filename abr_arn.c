@@ -65,9 +65,8 @@ static void fixInsert(Noeud *z) {
 static void inserer(int k) {
     Noeud *x = racine, *p = NULL;
     while (x) {
-        if (k == x->k) return;                   /* doublon refusé */
         p = x;
-        x = (k < x->k) ? x->g : x->d;
+        x = (k < x->k) ? x->g : x->d;        /* égal : le doublon va à droite */
     }
     Noeud *z = creer(k, ROUGE);                  /* nouveau nœud : rouge */
     z->p = p;
@@ -180,6 +179,12 @@ int main(void) {
         etat("après 10, 20, ..., 70 :");
         supprimer(10);
         etat("après suppression de 10 :");
+        liberer(racine);
+        racine = NULL;
+        for (int i = 0; i < 7; i++) inserer(5);
+        etat("sept fois la valeur 5 :");
+        supprimer(5);
+        etat("après suppression d'un 5 :");
         liberer(racine);
     }
     return 0;
